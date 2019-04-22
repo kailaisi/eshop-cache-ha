@@ -1,6 +1,7 @@
 package com.kailaisi.controller;
 
 import com.kailaisi.http.HttpClientUtils;
+import com.kailaisi.hystrix.command.GetBrandNameCommand;
 import com.kailaisi.hystrix.command.GetCityNameCommand;
 import com.kailaisi.hystrix.command.GetProductInfoCommand;
 import com.kailaisi.hystrix.command.GetProductInfosCommand;
@@ -29,7 +30,11 @@ public class CacheController {
         ProductInfo info = command.execute();
         GetCityNameCommand cityNameCommand = new GetCityNameCommand(info.getCityId());
         info.setCityName(cityNameCommand.execute());
+
+        GetBrandNameCommand getBrandNameCommand = new GetBrandNameCommand(info.getBrandId());
+        info.setBrandName(getBrandNameCommand.execute());
         System.out.println(info.toString());
+
         return "success";
     }
 

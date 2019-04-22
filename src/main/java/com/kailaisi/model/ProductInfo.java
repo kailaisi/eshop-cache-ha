@@ -19,6 +19,8 @@ public class ProductInfo {
     private String modifiedTime;
     private Long cityId;
     private String cityName;
+    private Long brandId;
+    private String brandName;
 
     public ProductInfo() {
 
@@ -120,6 +122,22 @@ public class ProductInfo {
         this.cityName = cityName;
     }
 
+    public Long getBrandId() {
+        return brandId;
+    }
+
+    public void setBrandId(Long brandId) {
+        this.brandId = brandId;
+    }
+
+    public String getBrandName() {
+        return brandName;
+    }
+
+    public void setBrandName(String brandName) {
+        this.brandName = brandName;
+    }
+
     @Override
     public String toString() {
         return "ProductInfo{" +
@@ -135,6 +153,8 @@ public class ProductInfo {
                 ", modifiedTime='" + modifiedTime + '\'' +
                 ", cityId=" + cityId +
                 ", cityName='" + cityName + '\'' +
+                ", brandId=" + brandId +
+                ", brandName='" + brandName + '\'' +
                 '}';
     }
 }
