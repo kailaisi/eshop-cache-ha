@@ -17,21 +17,32 @@ public class GetProductInfoCommand extends HystrixCommand<ProductInfo> {
 
     public GetProductInfoCommand(Long productId) {
         super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("GetProductInfoCommand"))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter())
+                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
+                        .withCircuitBreakerRequestVolumeThreshold(30)
+                        .withCircuitBreakerErrorThresholdPercentage(40)
+                        .withCircuitBreakerSleepWindowInMilliseconds(3000)
+                        .withExecutionTimeoutInMilliseconds(5000))
                 .andCommandKey(KEY)
                 .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("Hystrix"))
-                .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(20)
+                .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
+                        .withCoreSize(10)
+                        .withMaxQueueSize(12)
                         .withQueueSizeRejectionThreshold(10)));
         this.productId = productId;
     }
 
     @Override
     protected ProductInfo run() throws Exception {
+        System.out.println("调用接口，查询商品信息，productId=" + productId);
+        if (productId.equals(-1L)) {
+            throw new Exception();
+        }
+        if (productId.equals(-2L)) {
+            Thread.sleep(1000);
+        }
         String url = "http://192.168.11.129:8083/getProductInfo?productId=" + productId;
         String response = HttpClientUtils.sendGetRequest(url);
-        ProductInfo productInfo = JSONObject.parseObject(response, ProductInfo.class);
-        System.out.println("从服务器获取数据"+productInfo.toString());
-        return productInfo;
+        return JSONObject.parseObject(response, ProductInfo.class);
     }
 
     @Override
@@ -48,6 +59,7 @@ public class GetProductInfoCommand extends HystrixCommand<ProductInfo> {
 
     /**
      * 清除缓存
+     *
      * @param id
      */
     public static void flushCache(Long id) {

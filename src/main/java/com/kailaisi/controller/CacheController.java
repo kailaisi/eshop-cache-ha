@@ -1,16 +1,16 @@
 package com.kailaisi.controller;
 
 import com.kailaisi.http.HttpClientUtils;
-import com.kailaisi.hystrix.command.GetBrandNameCommand;
-import com.kailaisi.hystrix.command.GetCityNameCommand;
-import com.kailaisi.hystrix.command.GetProductInfoCommand;
-import com.kailaisi.hystrix.command.GetProductInfosCommand;
+import com.kailaisi.hystrix.command.*;
 import com.kailaisi.model.ProductInfo;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import rx.Observable;
 import rx.Observer;
+
+import java.util.ArrayList;
+import java.util.concurrent.Future;
 
 @Controller
 public class CacheController {
@@ -30,12 +30,10 @@ public class CacheController {
         ProductInfo info = command.execute();
         GetCityNameCommand cityNameCommand = new GetCityNameCommand(info.getCityId());
         info.setCityName(cityNameCommand.execute());
-
         GetBrandNameCommand getBrandNameCommand = new GetBrandNameCommand(info.getBrandId());
         info.setBrandName(getBrandNameCommand.execute());
         System.out.println(info.toString());
-
-        return "success";
+        return info.toString();
     }
 
     @RequestMapping("/getProductInfos")
@@ -64,8 +62,8 @@ public class CacheController {
 
     @RequestMapping("/getProductInfosForEvery")
     @ResponseBody
-    public String getProductInfosForEvery(String ids) {
-        String[] split = ids.split(",");
+    public String getProductInfosForEvery(String ids) throws Exception {
+        /*String[] split = ids.split(",");
         for (String id : split) {
             GetProductInfoCommand command = new GetProductInfoCommand(Long.valueOf(id));
             ProductInfo info = command.execute();
@@ -73,6 +71,15 @@ public class CacheController {
             info.setCityName(cityNameCommand.execute());
             System.out.println(info.toString());
             System.out.println("产品信息通过缓存获取到：" + command.isResponseFromCache());
+        }*/
+        ArrayList<Future<ProductInfo>> futures = new ArrayList<>();
+        String[] split = ids.split(",");
+        for (String id : split) {
+            GetProductInfosCollapser command = new GetProductInfosCollapser(Long.valueOf(id));
+            futures.add(command.queue());
+        }
+        for (Future<ProductInfo> future : futures) {
+            System.out.println("CacheControl的结果：" + (future.get()).toString());
         }
         return "success";
     }
