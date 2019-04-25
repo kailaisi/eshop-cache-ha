@@ -3,10 +3,7 @@ package com.kailaisi.hystrix.command;
 import com.alibaba.fastjson.JSONArray;
 import com.kailaisi.http.HttpClientUtils;
 import com.kailaisi.model.ProductInfo;
-import com.netflix.hystrix.HystrixCollapser;
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +17,10 @@ public class GetProductInfosCollapser extends HystrixCollapser<List<ProductInfo>
     private long productId;
 
     public GetProductInfosCollapser(long productId) {
+        super(Setter.withCollapserKey(HystrixCollapserKey.Factory.asKey("GetProductInfosCollapser"))
+                .andCollapserPropertiesDefaults(HystrixCollapserProperties.Setter()
+                        .withMaxRequestsInBatch(100)
+                        .withTimerDelayInMilliseconds(20)));
         this.productId = productId;
     }
 
