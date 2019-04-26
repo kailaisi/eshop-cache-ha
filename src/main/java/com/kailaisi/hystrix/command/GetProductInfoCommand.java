@@ -1,10 +1,16 @@
 package com.kailaisi.hystrix.command;
 
 import com.alibaba.fastjson.JSONObject;
+import com.kailaisi.cache.local.BrandCache;
+import com.kailaisi.cache.local.LocationCache;
 import com.kailaisi.http.HttpClientUtils;
 import com.kailaisi.model.ProductInfo;
 import com.netflix.hystrix.*;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * 描述：商品信息使用的hystrix
@@ -53,7 +59,19 @@ public class GetProductInfoCommand extends HystrixCommand<ProductInfo> {
     @Override
     protected ProductInfo getFallback() {
         ProductInfo info = new ProductInfo();
-        info.setName("降级产品");
+        info.setId(productId);
+        info.setBrandId(BrandCache.getBrandId(productId));
+        info.setBrandName(BrandCache.getBrandName(info.getBrandId()));
+        info.setCityId(LocationCache.getCityId(productId));
+        info.setCityName(LocationCache.getCityName(info.getCityId()));
+        info.setColor("默认颜色");
+        info.setModifiedTime(LocalDateTime.now().toString());
+        info.setName("默认产品");
+        info.setPictureList("a.png");
+        info.setPrice(0d);
+        info.setShopId(-1L);
+        info.setSize("默认大小");
+        info.setService("默认服务");
         return info;
     }
 
