@@ -8,9 +8,7 @@ import com.kailaisi.model.ProductInfo;
 import com.netflix.hystrix.*;
 import com.netflix.hystrix.strategy.concurrency.HystrixConcurrencyStrategyDefault;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * 描述：商品信息使用的hystrix
@@ -58,21 +56,7 @@ public class GetProductInfoCommand extends HystrixCommand<ProductInfo> {
 
     @Override
     protected ProductInfo getFallback() {
-        ProductInfo info = new ProductInfo();
-        info.setId(productId);
-        info.setBrandId(BrandCache.getBrandId(productId));
-        info.setBrandName(BrandCache.getBrandName(info.getBrandId()));
-        info.setCityId(LocationCache.getCityId(productId));
-        info.setCityName(LocationCache.getCityName(info.getCityId()));
-        info.setColor("默认颜色");
-        info.setModifiedTime(LocalDateTime.now().toString());
-        info.setName("默认产品");
-        info.setPictureList("a.png");
-        info.setPrice(0d);
-        info.setShopId(-1L);
-        info.setSize("默认大小");
-        info.setService("默认服务");
-        return info;
+        return new FirstLevelFallbackCommand(productId).execute();
     }
 
     /**
@@ -83,5 +67,44 @@ public class GetProductInfoCommand extends HystrixCommand<ProductInfo> {
     public static void flushCache(Long id) {
         HystrixRequestCache.getInstance(KEY,
                 HystrixConcurrencyStrategyDefault.getInstance()).clear(String.valueOf(id));
+    }
+
+    private static class FirstLevelFallbackCommand extends HystrixCommand<ProductInfo> {
+        private Long productId;
+
+        public FirstLevelFallbackCommand(Long productId) {
+            //降级command需要使用自己的线程池
+            super(Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey("FirstLevelFallbackCommand"))
+                    .andCommandKey(KEY)
+                    .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey("FirstLevelFallbackCommandPool")));
+            this.productId = productId;
+        }
+
+        @Override
+        protected ProductInfo run() throws Exception {
+            //第一级降级处理，所以需要从其他地址（备用地址）来获取数据
+            String url = "http://192.168.11.129:8083/getProductInfo?productId=" + productId;
+            String response = HttpClientUtils.sendGetRequest(url);
+            return JSONObject.parseObject(response, ProductInfo.class);
+        }
+
+        @Override
+        protected ProductInfo getFallback() {
+            ProductInfo info = new ProductInfo();
+            info.setId(productId);
+            info.setBrandId(BrandCache.getBrandId(productId));
+            info.setBrandName(BrandCache.getBrandName(info.getBrandId()));
+            info.setCityId(LocationCache.getCityId(productId));
+            info.setCityName(LocationCache.getCityName(info.getCityId()));
+            info.setColor("默认颜色");
+            info.setModifiedTime(LocalDateTime.now().toString());
+            info.setName("默认产品");
+            info.setPictureList("a.png");
+            info.setPrice(0d);
+            info.setShopId(-1L);
+            info.setSize("默认大小");
+            info.setService("默认服务");
+            return info;
+        }
     }
 }
